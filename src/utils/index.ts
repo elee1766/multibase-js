@@ -71,7 +71,7 @@ export function getExactUTCTimeISO() {
     let outputString = isoString.replace('T', ' ');
     // we can safely remove the Z at the end, as it will always be the last character
     if(outputString.endsWith('Z')) {
-        outputString = isoString.substring(0, isoString.length - 1);
+        outputString = outputString.substring(0, outputString.length - 1);
     }
     return outputString;
 }
