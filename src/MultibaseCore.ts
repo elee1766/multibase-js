@@ -1,4 +1,4 @@
-import { Event, Identify, MultibaseConfig, Properties, defaultConfig, isMultibaseConfigValid, multibaseConfigErrors } from "./types/base"
+import { Event, Identify, MultibaseConfig, MultibaseEndpoint, Properties, defaultConfig, isMultibaseConfigValid, multibaseConfigErrors } from "./types/base"
 import { getSavedUser } from "./utils/user"
 import { debugLog, getValidAddress, isBlockedUA, logError, logWarning } from "./utils"
 import { CONFIG } from './constants';
@@ -11,6 +11,8 @@ export class Multibase {
     private config: MultibaseConfig;
     private queuedEvents: Array<Event> = []
     private eventQueueTimer: any
+
+    private endpoints: MultibaseEndpoint[] = []
 
     constructor() {
         this.config = defaultConfig
@@ -44,6 +46,11 @@ export class Multibase {
             token,
             ...configuration || {},
         }
+        this.endpoints.push({
+            remoteUrl: configuration?.remoteUrl || CONFIG.url,
+            token: this.config.token,
+        })
+        this.endpoints.push(...(this.config.additionalEndpoints || []))
 
         return this
     }
@@ -122,26 +129,26 @@ export class Multibase {
 
     private async request(
         { endpoint, body }: { endpoint: string, body: object }) {
-        const token = this.config.token;
         const user = getSavedUser()
-
-        try {
-            const res = await fetch(`${CONFIG.url}/${endpoint}`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'x-api-key': token
-                },
-                body: JSON.stringify({
-                    ...user.toJSON(),
-                    ...body,
+        return await Promise.all(this.endpoints.map(async (x) => {
+            try {
+                const res = await fetch(`${x.remoteUrl}/${endpoint}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'x-api-key': x.token || "",
+                    },
+                    body: JSON.stringify({
+                        ...user.toJSON(),
+                        ...body,
+                    })
                 })
-            })
-            return res
-        } catch {
-            logError("There was an error connecting to the server.")
-        }
-        return null
+                return res
+            } catch {
+                logError(`There was an error connecting to the server.`)
+            }
+            return null
+        }))
     }
 }
 
