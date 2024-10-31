@@ -7,10 +7,19 @@ declare global {
     }
 }
 
+export type MultibaseEndpoint = {
+    remoteUrl: string;
+    token?: string;
+}
+
 export type MultibaseConfig = {
-    token: string;
     enabled: boolean;
     debug: boolean;
+
+    remoteUrl?:string;
+    token: string;
+
+    additionalEndpoints?: MultibaseEndpoint[];
 }
 
 export const isMultibaseConfigValid = (mc: Partial<MultibaseConfig> | undefined) => {
